@@ -26,7 +26,7 @@ def wait_for_file_complete(filepath, stable_secs=1):
         time.sleep(0.5)
 
 if __name__ == "__main__":
-    executable = os.path.join(Path().parent.absolute(), "diff_pdf\diffpdf.exe")
+    executable = os.path.join(Path().parent.absolute(), "source\diffpdf.exe")
     root = tk.Tk()
     root.withdraw()
     old_pdf_folder = filedialog.askdirectory(title="Select old pdf folder")
