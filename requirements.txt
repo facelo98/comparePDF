@@ -2,3 +2,4 @@ tqdm==4.67.1
 PyPDF2==3.0.1
 pyautogui==0.9.54
 cx_Freeze==8.3.0
+pywinauto==0.6.9
