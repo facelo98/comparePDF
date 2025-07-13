@@ -11,8 +11,10 @@ if __name__ == "__main__":
     directory_handler = DirectoryHandler(file_type=type_selector.file_type,
                                          process_type=type_selector.process_type)
     directory_handler.run()
-    if type_selector.file_type == ".rtf":
-        docx_to_pdf.convert(input_path=directory_handler.new_file_folder, output_path=directory_handler.new_pdf_folder)
+    if type_selector.file_type in [".rtf", ".docx"]:
+        docx_to_pdf.convert(input_path=directory_handler.new_file_folder,
+                            output_path=directory_handler.new_pdf_folder,
+                            extension=type_selector.file_type)
 
     if type_selector.process_type == "full":
         for pdf in directory_handler.files:

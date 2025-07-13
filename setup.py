@@ -8,7 +8,7 @@ build_exe_options = {
 
 setup(
     name="comparePDF",
-    version="1.1.0",
+    version="1.1.1",
     options={"build_exe": build_exe_options},
     executables=[Executable("main.py")]
 )

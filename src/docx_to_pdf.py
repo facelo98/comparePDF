@@ -6,14 +6,14 @@ from tqdm.auto import tqdm
 import os
 
 
-def windows(paths, keep_active):
+def windows(paths, keep_active, extension):
     import win32com.client
 
     word = win32com.client.Dispatch("Word.Application")
     wdFormatPDF = 17
 
     if paths["batch"]:
-        for docx_filepath in tqdm(sorted(Path(paths["input"]).glob("*.rtf"))):
+        for docx_filepath in tqdm(sorted(Path(paths["input"]).glob(f"*{extension}"))):
             pdf_filepath = Path(paths["output"]) / (str(docx_filepath.stem) + ".pdf")
             if not os.path.exists(pdf_filepath):
                 doc = word.Documents.Open(str(docx_filepath))
@@ -32,7 +32,7 @@ def windows(paths, keep_active):
         word.Quit()
 
 
-def macos(paths, keep_active):
+def macos(paths, keep_active, extension):
     script = (Path(__file__).parent / "convert.jxa").resolve()
     cmd = [
         "/usr/bin/osascript",
@@ -52,7 +52,7 @@ def macos(paths, keep_active):
                 break
             yield line.decode("utf-8")
 
-    total = len(list(Path(paths["input"]).glob("*.rtf"))) if paths["batch"] else 1
+    total = len(list(Path(paths["input"]).glob(f"*{extension}"))) if paths["batch"] else 1
     pbar = tqdm(total=total)
     for line in run(cmd):
         try:
@@ -66,7 +66,7 @@ def macos(paths, keep_active):
             sys.exit(1)
 
 
-def resolve_paths(input_path, output_path):
+def resolve_paths(input_path, output_path, extension):
     input_path = Path(input_path).resolve()
     output_path = Path(output_path).resolve() if output_path else None
     output = {}
@@ -82,7 +82,7 @@ def resolve_paths(input_path, output_path):
         output["output"] = output_path
     else:
         output["batch"] = False
-        assert str(input_path).endswith(".rtf")
+        assert str(input_path).endswith(extension)
         output["input"] = str(input_path)
         if output_path and output_path.is_dir():
             output_path = str(output_path / (str(input_path.stem) + ".pdf"))
@@ -94,12 +94,12 @@ def resolve_paths(input_path, output_path):
     return output
 
 
-def convert(input_path, output_path=None, keep_active=False):
-    paths = resolve_paths(input_path, output_path)
+def convert(input_path, output_path=None, keep_active=False, extension: str=".rtf"):
+    paths = resolve_paths(input_path, output_path, extension)
     if sys.platform == "darwin":
-        return macos(paths, keep_active)
+        return macos(paths, keep_active, extension)
     elif sys.platform == "win32":
-        return windows(paths, keep_active)
+        return windows(paths, keep_active, extension)
     else:
         raise NotImplementedError(
             "docx2pdf is not implemented for linux as it requires Microsoft Word to be installed"
@@ -110,10 +110,6 @@ def cli():
 
     import textwrap
     import argparse
-
-    if "--version" in sys.argv:
-        print(__version__)
-        sys.exit(0)
 
     description = textwrap.dedent(
         """

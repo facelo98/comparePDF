@@ -52,9 +52,7 @@ class DiffPdfHandler:
             self.save_empty_pdf()
         else:
             self.compare_window["Custom21"].click_input()
-
-
-        self.compare_window.close()
+            self.save_compare_result()
 
     def compare_files(self):
         from pywinauto import Application
@@ -65,6 +63,5 @@ class DiffPdfHandler:
     def compare(self):
         self.compare_files()
         self.save_diff()
-        self.save_compare_result()
         self.compare_window.close()
 

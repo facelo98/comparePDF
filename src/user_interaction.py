@@ -36,6 +36,10 @@ class TypeSelector:
             btn_both = tk.Button(self.root, text="ALSO COMPARES", width=20, command=self.select_both, bg="#008000",
                                  fg="white", font=("Helvetica", 10, "bold"))
             btn_both.pack(side="right", padx=20, pady=20)
+
+            self.add_hover_effect(btn_only_conversion, "#FFA500", "#FFB733")
+            self.add_hover_effect(btn_both, "#008000", "#00A000")
+
         else:
             self.process_type = "full"
 
@@ -55,17 +59,33 @@ class TypeSelector:
             self.root.resizable(False, False)
             self.root.protocol("WM_DELETE_WINDOW", sys.exit)
 
+    @staticmethod
+    def add_hover_effect(button, normal_bg, hover_bg):
+        button.bind("<Enter>", lambda e: button.config(bg=hover_bg))
+        button.bind("<Leave>", lambda e: button.config(bg=normal_bg))
+
     def choose_file_type(self):
-        label = tk.Label(self.root, text="Are you working with PDF or RTF files?", font=("Helvetica", 12))
+        label = tk.Label(self.root, text="Are you working with PDF, RTF or DOCX files?", font=("Helvetica", 12, "bold"))
         label.pack(pady=20)
 
-        btn_pdf = tk.Button(self.root, text="PDF", width=10, command=self.select_pdf, bg="#4caf50",
-                            fg="white", font=("Helvetica", 10, "bold"))
-        btn_pdf.pack(side="left", padx=100, pady=20)
+        button_frame = tk.Frame(self.root)
+        button_frame.pack(pady=0)
 
-        btn_word = tk.Button(self.root, text="RTF", width=10, command=self.select_word, bg="#2196f3",
+        btn_pdf = tk.Button(button_frame, text="PDF", width=10, command=self.select_pdf, bg="#4caf50",
+                            fg="white", font=("Helvetica", 10, "bold"))
+        btn_pdf.pack(side="left", padx=20)
+
+        btn_rtf = tk.Button(button_frame, text="RTF", width=10, command=self.select_rtf, bg="#1976D2",
+                            fg="white", font=("Helvetica", 10, "bold"))
+        btn_rtf.pack(side="left", padx=20)
+
+        btn_docx = tk.Button(button_frame, text="DOCX", width=10, command=self.select_docx, bg="#3F51B5",
                              fg="white", font=("Helvetica", 10, "bold"))
-        btn_word.pack(side="right", padx=100, pady=20)
+        btn_docx.pack(side="left", padx=20)
+
+        self.add_hover_effect(btn_pdf, "#4caf50", "#66bb6a")
+        self.add_hover_effect(btn_rtf, "#1976D2", "#42a5f5")
+        self.add_hover_effect(btn_docx, "#3F51B5", "#5c6bc0")
 
     def ask_file_type(self):
         self.root = tk.Tk()
@@ -78,8 +98,12 @@ class TypeSelector:
         self.file_type = ".pdf"
         self.root.destroy()
 
-    def select_word(self):
+    def select_rtf(self):
         self.file_type = ".rtf"
+        self.root.destroy()
+
+    def select_docx(self):
+        self.file_type = ".docx"
         self.root.destroy()
 
     def run(self):
@@ -114,9 +138,9 @@ class DirectoryHandler:
             self.new_file_folder = check_existence(ask_dir(kind="new PDF"))
             self.compare_pdf_folder = check_existence(ask_dir(kind="compare PDF"))
         elif self.process_type == "only_conversion":
-            self.new_file_folder = check_existence(ask_dir(kind="RTF"))
+            self.new_file_folder = check_existence(ask_dir(kind=self.file_type.upper()))
 
-        self.new_pdf_folder = f"{self.new_file_folder}/pdf" if self.file_type == ".rtf" else self.new_file_folder
+        self.new_pdf_folder = f"{self.new_file_folder}/pdf" if self.file_type != ".pdf" else self.new_file_folder
 
         self.files = check_existence(self.list_files(file_type=self.file_type))
 
