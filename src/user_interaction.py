@@ -24,17 +24,20 @@ class TypeSelector:
         self.process_type = None
 
     def choose_process_type(self):
-        label = tk.Label(self.root, text="Do you need only conversion to PDF or also compares?", font=("Helvetica", 12))
-        label.pack(pady=20)
+        if self.file_type != ".pdf":
+            label = tk.Label(self.root, text="Do you need only conversion to PDF or also compares?", font=("Helvetica", 12))
+            label.pack(pady=20)
 
-        btn_only_conversion = tk.Button(self.root, text="ONLY CONVERSION", width=20,
-                                        command=self.select_only_conversion, bg="#FFA500",
-                                        fg="white", font=("Helvetica", 10, "bold"))
-        btn_only_conversion.pack(side="left", padx=20, pady=20)
+            btn_only_conversion = tk.Button(self.root, text="ONLY CONVERSION", width=20,
+                                            command=self.select_only_conversion, bg="#FFA500",
+                                            fg="white", font=("Helvetica", 10, "bold"))
+            btn_only_conversion.pack(side="left", padx=20, pady=20)
 
-        btn_both = tk.Button(self.root, text="ALSO COMPARES", width=20, command=self.select_both, bg="#008000",
-                             fg="white", font=("Helvetica", 10, "bold"))
-        btn_both.pack(side="right", padx=20, pady=20)
+            btn_both = tk.Button(self.root, text="ALSO COMPARES", width=20, command=self.select_both, bg="#008000",
+                                 fg="white", font=("Helvetica", 10, "bold"))
+            btn_both.pack(side="right", padx=20, pady=20)
+        else:
+            self.process_type = "full"
 
     def select_only_conversion(self):
         self.process_type = "only_conversion"
@@ -45,11 +48,12 @@ class TypeSelector:
         self.root.destroy()
 
     def ask_only_conversion_to_pdf(self):
-        self.root = tk.Tk()
-        self.root.title("Process type selection")
-        self.root.geometry("600x150")
-        self.root.resizable(False, False)
-        self.root.protocol("WM_DELETE_WINDOW", sys.exit)
+        if self.file_type != ".pdf":
+            self.root = tk.Tk()
+            self.root.title("Process type selection")
+            self.root.geometry("600x150")
+            self.root.resizable(False, False)
+            self.root.protocol("WM_DELETE_WINDOW", sys.exit)
 
     def choose_file_type(self):
         label = tk.Label(self.root, text="Are you working with PDF or RTF files?", font=("Helvetica", 12))
