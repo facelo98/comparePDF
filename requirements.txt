@@ -1,5 +1,7 @@
-tqdm==4.67.1
-PyPDF2==3.0.1
-pyautogui==0.9.54
 cx_Freeze==8.3.0
-pywinauto==0.6.9
+numpy==2.2.6
+pdf2image==1.17.0
+opencv_python==4.12.0.88
+pillow==11.3.0
+pywin32==311
+tqdm==4.67.1

@@ -1,67 +1,84 @@
-import os
+from pdf2image import convert_from_path
+from PIL import Image
+import cv2
 from pathlib import Path
-from PyPDF2 import PdfWriter
-import pyautogui
-import time
-executable = os.path.join(Path().parent.parent.absolute(), "source\diffpdf.exe")
-
-
-def wait_save_complete(filepath, stable_secs=1):
-    last_size = -1
-    same_size_since = None
-    not_saved = True
-    while not_saved:
-        if os.path.exists(filepath):
-            current_size = os.path.getsize(filepath)
-            if current_size == last_size:
-                if same_size_since is None:
-                    same_size_since = time.time()
-                elif time.time() - same_size_since >= stable_secs:
-                    not_saved = False
-            else:
-                same_size_since = None
-                last_size = current_size
-        time.sleep(0.5)
+import numpy as np
+import os
+import tkinter as tk
+from tkinter import ttk
 
 
 class DiffPdfHandler:
-    def __init__(self, old_file:str, new_file:str, output_file: str):
-        self.old_file = Path(old_file).resolve().__str__()
-        self.new_file = Path(new_file).resolve().__str__()
-        self.output_file = Path(output_file).resolve().__str__()
-        self.compare_window = None
+    def __init__(self, pdf_path_1, pdf_path_2, output_path):
+        self.pdf_path_1 = pdf_path_1
+        self.pdf_path_2 = pdf_path_2
+        self.output_path = output_path
+        self.poppler_path = os.path.join(Path().parent.parent.absolute(), "src\poppler")
+        self.dpi = 200
 
-    def save_compare_result(self):
-        from pywinauto import Desktop
-        save_as = Desktop(backend="uia").window(title_re=".*DiffPDF.*")
-        save_as.wait('exists ready visible', timeout=10)
-        save_as["Custom9"].click_input()
-        pyautogui.write(self.output_file)
-        save_as['Custom12'].click_input()
-        wait_save_complete(filepath=self.output_file)
+    def _pil_to_cv2(self, pil_image):
+            return cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
 
-    def save_empty_pdf(self):
-        writer = PdfWriter()
-        writer.add_blank_page(width=595, height=842)
-        with open(self.output_file, "wb") as f:
-            writer.write(f)
+    def _highlight_differences(self, img1, img2, alpha=0.3, highlight_color=(180, 105, 255)):
+        gray1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
+        gray2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
 
-    def save_diff(self):
-        # Custom21 is "Save As..." button
-        if self.compare_window["Custom21"].exists and not self.compare_window["Custom21"].is_enabled():
-            self.save_empty_pdf()
-        else:
-            self.compare_window["Custom21"].click_input()
-            self.save_compare_result()
+        diff = cv2.absdiff(gray1, gray2)
+        _, thresh = cv2.threshold(diff, 30, 255, cv2.THRESH_BINARY)
 
-    def compare_files(self):
-        from pywinauto import Application
-        app = Application(backend="uia").start(f'"{executable}" "{self.old_file}" "{self.new_file}"')
-        self.compare_window = app.window(title_re="DiffPDF")
-        self.compare_window.wait('visible', timeout=20)
+        has_diff = cv2.countNonZero(thresh) > 0
+
+        if not has_diff:
+            return img1, img2, False
+
+        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        output1 = img1.copy()
+        output2 = img2.copy()
+        overlay1 = output1.copy()
+        overlay2 = output2.copy()
+
+        for contour in contours:
+            if cv2.contourArea(contour) > 20:
+                x, y, w, h = cv2.boundingRect(contour)
+                padding = 5
+                x, y = max(x - padding, 0), max(y - padding, 0)
+                w, h = w + 2 * padding, h + 2 * padding
+                cv2.rectangle(overlay1, (x, y), (x + w, y + h), highlight_color, -1)
+                cv2.rectangle(overlay2, (x, y), (x + w, y + h), highlight_color, -1)
+
+        cv2.addWeighted(overlay1, alpha, output1, 1 - alpha, 0, output1)
+        cv2.addWeighted(overlay2, alpha, output2, 1 - alpha, 0, output2)
+
+        return output1, output2, True
+
+    def _combine_images(self, img1, img2):
+        height = max(img1.shape[0], img2.shape[0])
+        width = img1.shape[1] + img2.shape[1]
+        combined = np.zeros((height, width, 3), dtype=np.uint8)
+
+        combined[:img1.shape[0], :img1.shape[1]] = img1
+        combined[:img2.shape[0], img1.shape[1]:] = img2
+
+        return combined
 
     def compare(self):
-        self.compare_files()
-        self.save_diff()
-        self.compare_window.close()
+        pages_pdf_1 = convert_from_path(self.pdf_path_1, poppler_path=self.poppler_path, dpi=self.dpi)
+        pages_pdf_2 = convert_from_path(self.pdf_path_2, poppler_path=self.poppler_path, dpi=self.dpi)
 
+        combined_pages = []
+
+        for (page1, page2) in zip(pages_pdf_1, pages_pdf_2):
+            cv2_page1 = self._pil_to_cv2(page1)
+            cv2_page2 = self._pil_to_cv2(page2)
+
+            out1, out2, has_diff = self._highlight_differences(cv2_page1, cv2_page2)
+            combined = self._combine_images(out1, out2)
+            combined_image = Image.fromarray(cv2.cvtColor(combined, cv2.COLOR_BGR2RGB))
+            combined_pages.append(combined_image)
+
+        if combined_pages:
+            combined_pages[0].save(self.output_path,
+                                   save_all=True,
+                                   append_images=combined_pages[1:],
+                                   resolution=100.0)

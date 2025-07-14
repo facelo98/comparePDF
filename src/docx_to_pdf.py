@@ -13,14 +13,14 @@ def windows(paths, keep_active, extension):
     wdFormatPDF = 17
 
     if paths["batch"]:
-        for docx_filepath in tqdm(sorted(Path(paths["input"]).glob(f"*{extension}"))):
+        for docx_filepath in tqdm(sorted(Path(paths["input"]).glob(f"*{extension}")), desc="Converting to PDF"):
             pdf_filepath = Path(paths["output"]) / (str(docx_filepath.stem) + ".pdf")
             if not os.path.exists(pdf_filepath):
                 doc = word.Documents.Open(str(docx_filepath))
                 doc.SaveAs(str(pdf_filepath), FileFormat=wdFormatPDF)
                 doc.Close(0)
     else:
-        pbar = tqdm(total=1)
+        pbar = tqdm(total=1, desc="Converting to PDF")
         docx_filepath = Path(paths["input"]).resolve()
         pdf_filepath = Path(paths["output"]).resolve()
         doc = word.Documents.Open(str(docx_filepath))
@@ -53,7 +53,7 @@ def macos(paths, keep_active, extension):
             yield line.decode("utf-8")
 
     total = len(list(Path(paths["input"]).glob(f"*{extension}"))) if paths["batch"] else 1
-    pbar = tqdm(total=total)
+    pbar = tqdm(total=total, desc="Converting to PDF")
     for line in run(cmd):
         try:
             msg = json.loads(line)
